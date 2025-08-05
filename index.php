@@ -87,13 +87,13 @@ if ($pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() == 0) {
     // Insert initial deadline
     $pdo->exec("INSERT INTO deadlines (deadline_day, deadline_time) VALUES (5, '17:00:00')");
     
-    // Create sample form config
-    $pdo->exec("INSERT INTO form_config (field_name, field_label, field_type, required, points) VALUES 
-               ('attendance', 'Attendance Rate', 'number', 1, 30),
-               ('projects', 'Projects Completed', 'number', 1, 25),
-               ('meetings', 'Meetings Attended', 'number', 1, 20),
-               ('challenges', 'Challenges Faced', 'text', 0, 15),
-               ('improvements', 'Improvement Suggestions', 'text', 0, 10)");
+    // Create sample form config with options
+    $pdo->exec("INSERT INTO form_config (field_name, field_label, field_type, required, options, points) VALUES 
+               ('attendance', 'Attendance Rate', 'select', 1, 'Excellent:30,Good:20,Fair:10,None:0', 0),
+               ('projects', 'Projects Completed', 'number', 1, '', 25),
+               ('meetings', 'Meetings Attended', 'number', 1, '', 20),
+               ('challenges', 'Challenges Faced', 'text', 0, '', 15),
+               ('improvements', 'Improvement Suggestions', 'text', 0, '', 10)");
 }
 
 // Helper functions
@@ -203,6 +203,11 @@ autoSubmitNilReports($pdo);
 // Handle form submissions
 $message = '';
 $action = $_GET['action'] ?? '';
+
+// Search parameters
+$searchQuery = $_GET['search'] ?? '';
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$perPage = 5; // Users per page
 
 // Login
 if (isset($_POST['login'])) {
@@ -314,7 +319,19 @@ if (isset($_POST['submit_attendance']) && $_SESSION['role'] === 'director') {
                 
                 // Calculate points
                 if (!empty($value)) {
-                    $totalPoints += $field['points'];
+                    // For select fields, get points from option
+                    if ($field['field_type'] === 'select' && !empty($field['options'])) {
+                        $options = explode(',', $field['options']);
+                        foreach ($options as $option) {
+                            list($optName, $optPoints) = explode(':', $option);
+                            if (trim($optName) === $value) {
+                                $totalPoints += intval($optPoints);
+                                break;
+                            }
+                        }
+                    } else {
+                        $totalPoints += $field['points'];
+                    }
                 }
             }
             
@@ -474,6 +491,31 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'director') {
     $stmt->execute([$_SESSION['user_id'], $currentWeek]);
     $userSubmitted = $stmt->fetchColumn() > 0;
 }
+
+// Get users with search and pagination
+$userQuery = "SELECT u.*, d.name AS dept_name 
+              FROM users u 
+              LEFT JOIN departments d ON u.department_id = d.id";
+
+$userParams = [];
+if (!empty($searchQuery)) {
+    $userQuery .= " WHERE u.name LIKE ? OR u.username LIKE ? OR d.name LIKE ? OR u.role LIKE ?";
+    $searchTerm = "%$searchQuery%";
+    $userParams = array_fill(0, 4, $searchTerm);
+}
+
+$userQuery .= " ORDER BY u.name ASC";
+
+// Pagination
+$userCountStmt = $pdo->prepare(str_replace('u.*, d.name AS dept_name', 'COUNT(*)', $userQuery));
+$userCountStmt->execute($userParams);
+$totalUsers = $userCountStmt->fetchColumn();
+$totalPages = ceil($totalUsers / $perPage);
+
+$userQuery .= " LIMIT " . (($page - 1) * $perPage) . ", $perPage";
+$userStmt = $pdo->prepare($userQuery);
+$userStmt->execute($userParams);
+$users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Send SMS reminders
 if (isset($_GET['send_reminders'])) {
@@ -699,6 +741,27 @@ if (isset($_GET['send_reminders'])) {
             font-size: 1.2rem;
         }
         
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .search-container .form-control {
+            padding-left: 40px;
+        }
+        
+        .search-container i {
+            position: absolute;
+            left: 15px;
+            top: 12px;
+            color: #6c757d;
+        }
+        
+        .pagination {
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
         @media (max-width: 768px) {
             .login-container {
                 margin: 50px auto;
@@ -877,9 +940,9 @@ if (isset($_GET['send_reminders'])) {
                                                     <div class="col-md-9">
                                                         <div class="row options-row" style="<?= $field['field_type'] === 'select' ? '' : 'display:none;' ?>">
                                                             <div class="col-md-12">
-                                                                <label class="form-label">Options (comma separated)</label>
+                                                                <label class="form-label">Options (format: Option1:Points, Option2:Points)</label>
                                                                 <input type="text" name="field_options[]" class="form-control" 
-                                                                       value="<?= $field['options'] ?>">
+                                                                       value="<?= $field['options'] ?>" placeholder="e.g., Excellent:30,Good:20,None:0">
                                                             </div>
                                                         </div>
                                                     </div>
@@ -917,7 +980,13 @@ if (isset($_GET['send_reminders'])) {
                     <?php if($_SESSION['role'] === 'superadmin'): ?>
                         <div class="card mb-4">
                             <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>User Management</h5>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>User Management</h5>
+                                    <div class="search-container">
+                                        <i class="fas fa-search"></i>
+                                        <input type="text" id="userSearch" class="form-control" placeholder="Search users..." value="<?= htmlspecialchars($searchQuery) ?>">
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <form method="POST" class="mb-4">
@@ -977,14 +1046,7 @@ if (isset($_GET['send_reminders'])) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php 
-                                                $stmt = $pdo->query("SELECT u.*, d.name AS dept_name 
-                                                                    FROM users u 
-                                                                    LEFT JOIN departments d ON u.department_id = d.id");
-                                                $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                                                
-                                                foreach($users as $user):
-                                            ?>
+                                            <?php foreach($users as $user): ?>
                                                 <tr>
                                                     <td><?= $user['name'] ?></td>
                                                     <td><?= $user['username'] ?></td>
@@ -1003,6 +1065,35 @@ if (isset($_GET['send_reminders'])) {
                                         </tbody>
                                     </table>
                                 </div>
+                                
+                                <!-- Pagination -->
+                                <?php if($totalPages > 1): ?>
+                                    <nav>
+                                        <ul class="pagination">
+                                            <?php if($page > 1): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=<?= $page-1 ?>&search=<?= urlencode($searchQuery) ?>">
+                                                        <i class="fas fa-chevron-left"></i>
+                                                    </a>
+                                                </li>
+                                            <?php endif; ?>
+                                            
+                                            <?php for($i = 1; $i <= $totalPages; $i++): ?>
+                                                <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                                                    <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($searchQuery) ?>"><?= $i ?></a>
+                                                </li>
+                                            <?php endfor; ?>
+                                            
+                                            <?php if($page < $totalPages): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=<?= $page+1 ?>&search=<?= urlencode($searchQuery) ?>">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </a>
+                                                </li>
+                                            <?php endif; ?>
+                                        </ul>
+                                    </nav>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endif; ?>
@@ -1036,7 +1127,11 @@ if (isset($_GET['send_reminders'])) {
                                                 <?php if($field['required']): ?>
                                                     <span class="text-danger">*</span>
                                                 <?php endif; ?>
-                                                <span class="badge gradient-badge float-end">+<?= $field['points'] ?> points</span>
+                                                <?php if($field['field_type'] === 'select'): ?>
+                                                    <span class="badge gradient-badge float-end">Points vary by option</span>
+                                                <?php else: ?>
+                                                    <span class="badge gradient-badge float-end">+<?= $field['points'] ?> points</span>
+                                                <?php endif; ?>
                                             </label>
                                             
                                             <?php if($field['field_type'] === 'text'): ?>
@@ -1059,10 +1154,15 @@ if (isset($_GET['send_reminders'])) {
                                                         name="<?= $field['field_name'] ?>" 
                                                         <?= $field['required'] ? 'required' : '' ?>>
                                                     <option value="">-- Select --</option>
+                                                    <option value="None">None (0 points)</option>
                                                     <?php if(!empty($field['options'])): 
                                                         $options = explode(',', $field['options']);
-                                                        foreach($options as $option): ?>
-                                                        <option value="<?= trim($option) ?>"><?= trim($option) ?></option>
+                                                        foreach($options as $option): 
+                                                            $parts = explode(':', $option);
+                                                            $optName = trim($parts[0]);
+                                                            $optPoints = isset($parts[1]) ? intval(trim($parts[1])) : 0;
+                                                    ?>
+                                                        <option value="<?= $optName ?>"><?= $optName ?> (<?= $optPoints ?> points)</option>
                                                     <?php endforeach; endif; ?>
                                                 </select>
                                                 
@@ -1094,6 +1194,7 @@ if (isset($_GET['send_reminders'])) {
                                                 <div class="modal-body">
                                                     <p class="fs-5">Are you sure you want to submit this week's attendance report?</p>
                                                     <p class="text-muted">Note: You can only submit once per week.</p>
+                                                    <p class="fw-bold">Submitted by: <?= $_SESSION['name'] ?> (Director)</p>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -1127,6 +1228,7 @@ if (isset($_GET['send_reminders'])) {
                                     <div class="alert alert-success">
                                         <h4><i class="fas fa-check me-2"></i>Attendance Submitted!</h4>
                                         <p class="mb-0">You have successfully submitted this week's attendance report.</p>
+                                        <p class="fw-bold mt-2">Submitted by: <?= $_SESSION['name'] ?> (Director)</p>
                                     </div>
                                 </div>
                             </div>
@@ -1138,15 +1240,21 @@ if (isset($_GET['send_reminders'])) {
                         <div class="card-header bg-info text-white">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Weekly Attendance Report</h5>
-                                <a href="?action=export_csv&week=<?= $currentWeek ?>" class="btn btn-sm btn-dark">
-                                    <i class="fas fa-file-csv me-1"></i>Export CSV
-                                </a>
+                                <div class="d-flex">
+                                    <div class="search-container me-2">
+                                        <i class="fas fa-search"></i>
+                                        <input type="text" id="departmentSearch" class="form-control" placeholder="Search departments...">
+                                    </div>
+                                    <a href="?action=export_csv&week=<?= $currentWeek ?>" class="btn btn-sm btn-dark">
+                                        <i class="fas fa-file-csv me-1"></i>Export CSV
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="card-body">
                             <h5 class="mb-3">Week: <?= $currentWeek ?></h5>
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle">
+                                <table class="table table-hover align-middle" id="departmentTable">
                                     <thead class="table-light">
                                         <tr>
                                             <th>Department</th>
@@ -1352,8 +1460,8 @@ if (isset($_GET['send_reminders'])) {
                                 <div class="col-md-9">
                                     <div class="row options-row" style="display:none;">
                                         <div class="col-md-12">
-                                            <label class="form-label">Options (comma separated)</label>
-                                            <input type="text" name="field_options[]" class="form-control">
+                                            <label class="form-label">Options (format: Option1:Points, Option2:Points)</label>
+                                            <input type="text" name="field_options[]" class="form-control" placeholder="e.g., Excellent:30,Good:20,None:0">
                                         </div>
                                     </div>
                                 </div>
@@ -1431,6 +1539,30 @@ if (isset($_GET['send_reminders'])) {
                             }
                         }
                     }
+                });
+            }
+            
+            // Search functionality
+            const userSearch = document.getElementById('userSearch');
+            if (userSearch) {
+                userSearch.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter') {
+                        const query = userSearch.value.trim();
+                        window.location.href = `?search=${encodeURIComponent(query)}`;
+                    }
+                });
+            }
+            
+            const departmentSearch = document.getElementById('departmentSearch');
+            if (departmentSearch) {
+                departmentSearch.addEventListener('keyup', function() {
+                    const value = departmentSearch.value.toLowerCase();
+                    const rows = document.querySelectorAll('#departmentTable tbody tr');
+                    
+                    rows.forEach(row => {
+                        const name = row.querySelector('td:first-child').textContent.toLowerCase();
+                        row.style.display = name.includes(value) ? '' : 'none';
+                    });
                 });
             }
         });
