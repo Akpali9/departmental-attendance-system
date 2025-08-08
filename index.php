@@ -62,7 +62,6 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS deadlines (
     deadline_time TIME NOT NULL DEFAULT '17:00:00',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
-
 // Insert initial data if needed
 if ($pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() == 0) {
     // Create departments
