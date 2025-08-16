@@ -244,7 +244,7 @@ if ($action === 'logout') {
 }
 
 // Save form configuration (superadmin)
-if (isset($_POST['save_form_config']) && $_SESSION['role'] === 'superadmin') {
+if (isset($_POST['save_form_config']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin') {
     $pdo->beginTransaction();
     
     try {
@@ -271,7 +271,7 @@ if (isset($_POST['save_form_config']) && $_SESSION['role'] === 'superadmin') {
 }
 
 // Submit attendance (director)
-if (isset($_POST['submit_attendance']) && $_SESSION['role'] === 'director') {
+if (isset($_POST['submit_attendance']) && isset($_SESSION['role']) && $_SESSION['role'] === 'director') {
     if (isDeadlinePassed($pdo)) {
         $message = "Submission deadline has passed!";
     } else {
@@ -391,7 +391,7 @@ if (isset($_POST['submit_attendance']) && $_SESSION['role'] === 'director') {
 }
 
 // Set deadline (superadmin)
-if (isset($_POST['set_deadline']) && $_SESSION['role'] === 'superadmin') {
+if (isset($_POST['set_deadline']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin') {
     $day = $_POST['deadline_day'];
     $time = $_POST['deadline_time'];
     
@@ -405,7 +405,7 @@ if (isset($_POST['set_deadline']) && $_SESSION['role'] === 'superadmin') {
 }
 
 // Add user (superadmin)
-if (isset($_POST['add_user']) && $_SESSION['role'] === 'superadmin') {
+if (isset($_POST['add_user']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin') {
     $name = $_POST['name'];
     $username = $_POST['username'];
     $phone = $_POST['phone'];
@@ -434,7 +434,7 @@ if (isset($_POST['add_user']) && $_SESSION['role'] === 'superadmin') {
 }
 
 // Delete user (superadmin) - protected users cannot be deleted
-if ($action === 'delete_user' && $_SESSION['role'] === 'superadmin') {
+if ($action === 'delete_user' && isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin') {
     $user_id = $_GET['id'] ?? 0;
     
     try {
@@ -456,7 +456,7 @@ if ($action === 'delete_user' && $_SESSION['role'] === 'superadmin') {
 }
 
 // Update user profile (for leaders)
-if (isset($_POST['update_profile']) && ($_SESSION['role'] === 'director' || $_SESSION['role'] === 'department_team_leader')) {
+if (isset($_POST['update_profile']) && isset($_SESSION['role']) && in_array($_SESSION['role'], ['director', 'department_team_leader'])) {
     $departmental_leader = $_POST['departmental_leader'];
     $assistant_departmental_leader = $_POST['assistant_departmental_leader'];
     
@@ -477,7 +477,7 @@ if (isset($_POST['update_profile']) && ($_SESSION['role'] === 'director' || $_SE
 }
 
 // Update directorate (superadmin)
-if (isset($_POST['update_directorate']) && $_SESSION['role'] === 'superadmin') {
+if (isset($_POST['update_directorate']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin') {
     $user_id = $_POST['user_id'];
     $directorate = $_POST['directorate'];
     
@@ -577,7 +577,7 @@ if ($action === 'export_csv') {
 // View report endpoint
 if ($action === 'view_report') {
     $week = $_GET['week'] ?? date('Y-W');
-    $departmentId = $_GET['department_id'] ?? $_SESSION['department_id'];
+    $departmentId = $_GET['department_id'] ?? ($_SESSION['department_id'] ?? 0);
     
     // Get the submission for this department and week
     $stmt = $pdo->prepare("SELECT * FROM submissions 
@@ -637,7 +637,7 @@ if ($action === 'view_report') {
                             <td><?= $submission['month'] ?? 'Nill' ?></td>
                         </tr>
                         <tr>
-                            <th>Year</th>
+                            <th>Year</极狐>
                             <td><?= $submission['year'] ?? 'Nill' ?></td>
                         </tr>
                         <tr>
@@ -653,7 +653,7 @@ if ($action === 'view_report') {
                         <tr>
                             <th>New Members This Week</th>
                             <td><?= $data['new_members_this_week'] ?? 'Nill' ?></td>
-                        </tr>
+                        </极狐>
                         <tr>
                             <th>Active Departmental Officers</th>
                             <td><?= $data['active_officers'] ?? 'Nill' ?></td>
@@ -737,7 +737,7 @@ $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Check if current user has submitted for this week
 $userSubmitted = false;
-if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'director') {
+if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'director') {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM submissions 
                           WHERE director_id = ? AND week = ?");
     $stmt->execute([$_SESSION['user_id'], $currentWeek]);
@@ -806,7 +806,6 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom: 25px;
         }
        
-        
         .card:hover {
             transform: translateY(-8px);
             box-shadow: 0 15px 30px rgba(0,0,0,0.15);
@@ -871,7 +870,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
         }
         
         .btn-success {
-            background: linear-gradient(45deg, var(--success) 0%, #96c93d 100%);
+            background: linear-gradient(45极狐, var(--success) 0%, #96c93d 100%);
             border: none;
         }
         
@@ -1039,53 +1038,50 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
     </style>
 </head>
 <body>
-     
-        <!-- Login Form -->
-        <?php if(!isset($_SESSION['user_id'])): ?>
-            <div class="login-container">
-                
-                <h2 class="text-center mb-4" ><img src="img/logo.png" style="height:40px; width:45px; justify-content: center" alt="logo">LAM Departmental Reports</h2><hr>
-                <form method="POST" style="margin-top: 39px;">
-                    <div class="mb-4">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text"  class="form-control form-control-lg" id="username" name="username" required>
+    <!-- Login Form -->
+    <?php if(!isset($_SESSION['user_id'])): ?>
+        <div class="login-container">
+            <h2 class="text-center mb-4" ><img src="img/logo.png" style="height:40px; width:45px; justify-content: center" alt="logo">LAM Departmental Reports</h2><hr>
+            <form method="POST" style="margin-top: 39px;">
+                <div class="mb-4">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text"  class="form-control form-control-lg" id="username" name="username" required>
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control form-control-lg" id="password" name="password" required>
+                </div>
+                <button type="submit" name="login" class="btn btn-primary btn-lg w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </button>
+            </form>
+        </div>
+    
+    <?php else: ?>
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container">
+                <a class="navbar-brand" href="#">
+                    <img src="img/logo.png" style="height:40px; width:45px" alt="logo">LAM Departmental Reports
+                </a>
+                <?php if(isset($_SESSION['user_id'])): ?>
+                    <div class="d-flex align-items-center">
+                        <span class="text-white me-3 d-none d-md-block">Welcome, <?= $_SESSION['name'] ?></span>
+                        <a href="?action=logout" class="btn btn-sm btn-outline-light">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
                     </div>
-                    <div class="mb-4">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control form-control-lg" id="password" name="password" required>
-                    </div>
-                    <button type="submit" name="login" class="btn btn-primary btn-lg w-100">
-                        <i class="fas fa-sign-in-alt me-2"></i>Login
-                    </button>
-                </form>
+                <?php endif; ?>
             </div>
-        
-        <?php else: ?>
-            
-             <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <img src="img/logo.png" style="height:40px; width:45px" alt="logo">LAM Departmental Reports
-            </a>
-            <?php if(isset($_SESSION['user_id'])): ?>
-                <div class="d-flex align-items-center">
-                    <span class="text-white me-3 d-none d-md-block">Welcome, <?= $_SESSION['name'] ?></span>
-                    <a href="?action=logout" class="btn btn-sm btn-outline-light">
-                        <i class="fas fa-sign-out-alt me-1"></i>Logout
-                    </a>
+        </nav>
+        <div class="container mt-4">
+            <!-- Messages -->
+            <?php if(!empty($message)): ?>
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <?= $message ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             <?php endif; ?>
-        </div>
-    </nav>
-     <div class="container mt-4">
-        <!-- Messages -->
-        <?php if(!empty($message)): ?>
-            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                <?= $message ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
 
             <!-- Dashboard Content -->
             <div class="row mb-4">
@@ -1100,7 +1096,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                                     <?= $deadlinePassed ? 'Deadline Passed' : 'Open for Submission' ?>
                                 </span>
                             </p>
-                            <?php if($_SESSION['role'] === 'superadmin'): ?>
+                            <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin'): ?>
                                 <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#deadlineModal">
                                     <i class="fas fa-cog me-1"></i>Configure Deadline
                                 </button>
@@ -1111,7 +1107,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
 
             <!-- Profile Update Section for Leaders -->
-            <?php if(in_array($_SESSION['role'], ['director','department_team_leader'])): ?>
+            <?php if(isset($_SESSION['role']) && in_array($_SESSION['role'], ['director','department_team_leader'])): ?>
                 <div class="card mb-4">
                     <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Update Department Leadership</h5>
@@ -1138,90 +1134,88 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             <?php endif; ?>
 
-           
-<?php if(in_array($_SESSION['role'], [ 'superadmin'])): ?>
-            <!-- Dashboard Stats -->
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="card text-center py-4">
-                        <div class="dashboard-icon">
-                            <i class="fas fa-building"></i>
+            <?php if(isset($_SESSION['role']) && in_array($_SESSION['role'], ['superadmin'])): ?>
+                <!-- Dashboard Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-center py-4">
+                            <div class="dashboard-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="dashboard-stat">
+                                <?= count($departments) ?>
+                            </div>
+                            <div class="dashboard-title">Departments</div>
                         </div>
-                        <div class="dashboard-stat">
-                            <?= count($departments) ?>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center py-4">
+                            <div class="dashboard-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="dashboard-stat">
+                                <?php 
+                                    $stmt = $pdo->query("SELECT COUNT(*) FROM users");
+                                    echo $stmt->fetchColumn();
+                                ?>
+                            </div>
+                            <div class="dashboard-title">Total Users</div>
                         </div>
-                        <div class="dashboard-title">Departments</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center py-4">
+                            <div class="dashboard-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="dashboard-stat">
+                                <?php 
+                                    $stmt = $pdo->query("SELECT COUNT(*) FROM submissions WHERE week = '$currentWeek'");
+                                    echo $stmt->fetchColumn();
+                                ?>
+                            </div>
+                            <div class="dashboard-title">This Week's Submissions</div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card text-center py-4">
-                        <div class="dashboard-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="dashboard-stat">
-                            <?php 
-                                $stmt = $pdo->query("SELECT COUNT(*) FROM users");
-                                echo $stmt->fetchColumn();
-                            ?>
-                        </div>
-                        <div class="dashboard-title">Total Users</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-center py-4">
-                        <div class="dashboard-icon">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <div class="dashboard-stat">
-                            <?php 
-                                $stmt = $pdo->query("SELECT COUNT(*) FROM submissions WHERE week = '$currentWeek'");
-                                echo $stmt->fetchColumn();
-                            ?>
-                        </div>
-                        <div class="dashboard-title">This Week's Submissions</div>
-                    </div>
-                </div>
-            </div>
-<?php endif; ?>
+            <?php endif; ?>
+
             <!-- Main Content -->
             <div class="row">
                 <!-- Left Column -->
                 <div class="col-lg-8">
-                    
-
-               <!-- Directorate Update for Superadmin -->
-            <?php if($_SESSION['role'] === 'superadmin'): ?>
-                <div class="card mb-4 ">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fas fa-building me-2"></i>Update Directorate</h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Select User</label>
-                                    <select name="user_id" class="form-select" required>
-                                        <?php foreach($users as $user): ?>
-                                            <option value="<?= $user['id'] ?>">
-                                                <?= $user['name'] ?> (<?= $user['dept_name'] ?? 'No Department' ?>)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Directorate</label>
-                                    <input type="text" name="directorate" class="form-control" required>
-                                </div>
+                    <!-- Directorate Update for Superadmin -->
+                    <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin'): ?>
+                        <div class="card mb-4 ">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="fas fa-building me-2"></i>Update Directorate</h5>
                             </div>
-                            <button type="submit" name="update_directorate" class="btn btn-warning">
-                                <i class="fas fa-save me-1"></i>Update Directorate
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            <?php endif; ?>     
+                            <div class="card-body">
+                                <form method="POST">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Select User</label>
+                                            <select name="user_id" class="form-select" required>
+                                                <?php foreach($users as $user): ?>
+                                                    <option value="<?= $user['id'] ?>">
+                                                        <?= $user['name'] ?> (<?= $user['dept_name'] ?? 'No Department' ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Directorate</label>
+                                            <input type="text" name="directorate" class="form-control" required>
+                                        </div>
+                                    </div>
+                                    <button type="submit" name="update_directorate" class="btn btn-warning">
+                                        <i class="fas fa-save me-1"></i>Update Directorate
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endif; ?>     
                  
- <!-- Weekly Report -->
+                    <!-- Weekly Report -->
                     <div class="card mb-4">
                         <div class="card-header bg-info text-white">
                             <div class="d-flex justify-content-between align-items-center">
@@ -1283,7 +1277,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
      
-                    <?php if(in_array($_SESSION['role'], ['director'])): ?>
+                    <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'director'): ?>
                         <!-- Director's Report History -->
                         <div class="card mb-4">
                             <div class="card-header bg-info text-white">
@@ -1337,9 +1331,6 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
 
                 <!-- Right Column -->
                 <div class="col-lg-4">
-                    
-                   
-
                     <!-- Department Performance -->
                     <div class="card mb-4">
                         <div class="card-header bg-warning text-dark">
@@ -1362,627 +1353,623 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                             <?php endforeach; ?>
                         </div>
                     </div>
+                    
                     <!-- User Info Card -->
-                      <?php if(in_array($_SESSION['role'], ['director','superadmin','department_team_leader'])): ?>
-                    <div class="card mb-4">
-                        <div class="card-header bg-secondary text-white">
-                            <h5 class="mb-0"><i class="fas fa-user me-2"></i>User Information</h5>
-                        </div>
-                        <div class="card-body-cart">
-                            <div class="d-flex align-items-center mb-4">
-                                <div class="bg-primary text-white rounded-circle p-3 me-3">
-                                    <i class="fas fa-user fa-2x"></i>
-                                </div>
-                                <div>
-                                    <h4 class="mb-0"><?= $_SESSION['name'] ?></h4>
-                                    <p class="mb-0 text-muted">@<?= $_SESSION['username'] ?></p>
-                                    <span class="badge bg-info mt-1"><?= ucfirst($_SESSION['role']) ?></span>
-                                </div>
-                            </div>
-                            <ul class="list-group">
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Department:</span>
-                                    <span class="fw-bold">
-                                        <?php if($_SESSION['department_id']): 
-                                            $stmt = $pdo->prepare("SELECT name FROM departments WHERE id = ?");
-                                            $stmt->execute([$_SESSION['department_id']]);
-                                            echo $stmt->fetchColumn();
-                                        else: ?>
-                                            N/A
-                                        <?php endif; ?>
-                                    </span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Last Login:</span>
-                                    <span><?= date('Y-m-d H:i') ?></span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Current Week:</span>
-                                    <span><?= date('Y-W') ?></span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Submission Status:</span>
-                                    <span class="badge bg-<?= $userSubmitted ? 'success' : ($deadlinePassed ? 'danger' : 'warning') ?>">
-                                        <?= $userSubmitted ? 'Submitted' : ($deadlinePassed ? 'Deadline Passed' : 'Pending') ?>
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-        <?php endif; ?>
-                </div>
-            </div>
-            
-        <?php endif; ?>
-           <!-- Attendance Form (Director) -->
-                     
-                        
-                     <?php if(in_array($_SESSION['role'], ['director','department_team_leader']) && !$deadlinePassed && !$userSubmitted): ?>
+                    <?php if(isset($_SESSION['role']) && in_array($_SESSION['role'], ['director','superadmin','department_team_leader'])): ?>
                         <div class="card mb-4">
-                            <div class="card-header bg-success text-white">
-                                <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Weekly Attendance Form</h5>
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0"><i class="fas fa-user me-2"></i>User Information</h5>
                             </div>
-                            <div class="card-body">
-                                <div class="alert alert-info d-flex align-items-center">
-                                    <i class="fas fa-info-circle me-3 fs-4"></i>
+                            <div class="card-body-cart">
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="bg-primary text-white rounded-circle p-3 me-3">
+                                        <i class="fas fa-user fa-2x"></i>
+                                    </div>
                                     <div>
-                                        <h5 class="mb-1">Director: <?= $_SESSION['name'] ?></h5>
-                                        <p class="mb-0">Department: 
-                                            <?php 
+                                        <h4 class="mb-0"><?= $_SESSION['name'] ?></h4>
+                                        <p class="mb-0 text-muted">@<?= $_SESSION['username'] ?></p>
+                                        <span class="badge bg-info mt-1"><?= ucfirst($_SESSION['role']) ?></span>
+                                    </div>
+                                </div>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Department:</span>
+                                        <span class="fw-bold">
+                                            <?php if($_SESSION['department_id']): 
                                                 $stmt = $pdo->prepare("SELECT name FROM departments WHERE id = ?");
                                                 $stmt->execute([$_SESSION['department_id']]);
                                                 echo $stmt->fetchColumn();
-                                            ?>
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <!-- Department Information Section -->
-                                 
-                                <div class="card mb-4">
-                                    <div class="card-header bg-info text-white">
-                                        <h5 class="mb-0">Department Information</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label">Departmental Leader</label>
-                                                <input type="text" class="form-control" 
-                                                       value="<?= $currentUser['departmental_leader'] ?? 'Not set' ?>" readonly disabled>
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label">Assistant Leader</label>
-                                                <input type="text" class="form-control" 
-                                                       value="<?= $currentUser['assistant_departmental_leader'] ?? 'Not set' ?>" readonly disabled>
-                                            </div>
-                                            <div class="col-md-4 mb-3">
-                                                <label class="form-label">Directorate</label>
-                                                <input type="text" class="form-control" 
-                                                       value="<?= $currentUser['directorate'] ?? 'Not set' ?>" readonly disabled>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Weekly Attendance Fields -->
-                                <form method="POST" id="attendanceForm">
-                                    <div class="card mb-4">
-                                        <div class="card-header bg-primary text-white">
-                                            <h5 class="mb-0">Membership Information</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-md-4 mb-3">
-                                                    <label class="form-label">Current Membership Strength</label>
-                                                    <input type="number" class="form-control" 
-                                                           name="current_membership_strength" 
-                                                           value="<?= $currentUser['membership_strength'] ?? 0 ?>" 
-                                                           min="0" readonly>
-                                                </div>
-                                                <div class="col-md-4 mb-3">
-                                                    <label class="form-label">New Members This Week</label>
-                                                    <input type="number" class="form-control" 
-                                                           name="new_members_this_week" 
-                                                           min="0" required>
-                                                    <small class="form-text text-muted">This will update membership strength</small>
-                                                </div>
-                                                <div class="col-md-4 mb-3">
-                                                    <label class="form-label">Active Departmental Officers</label>
-                                                    <input type="number" class="form-control" 
-                                                           name="active_officers" 
-                                                           value="<?= $currentUser['active_officers'] ?? 0 ?>" 
-                                                           min="0" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="card mb-4">
-                                        <div class="card-header bg-primary text-white">
-                                            <h5 class="mb-0">Team Attendance</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Team 1 Attendance</label>
-                                                    <input type="number" class="form-control" 
-                                                           name="team1_attendance" 
-                                                           min="0" required>
-                                                </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Team 2 Attendance</label>
-                                                    <input type="number" class="form-control" 
-                                                           name="team2_attendance" 
-                                                           min="0" required>
-                                                </div>
-                                            </div>
-                                            <p class="text-muted">Note: Team attendance will be combined for departmental reporting</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <input type="hidden" name="departmental_leader" value="<?= $currentUser['departmental_leader'] ?>">
-                                    <input type="hidden" name="assistant_departmental_leader" value="<?= $currentUser['assistant_departmental_leader'] ?>">
-                                    <input type="hidden" name="directorate" value="<?= $currentUser['directorate'] ?>">
-                                    
-                                    <!-- Custom Form Fields -->
-                                    <?php if(count($formConfig) > 0): ?>
-                                        <div class="card mb-4">
-                                            <div class="card-header bg-primary text-white">
-                                                <h5 class="mb-0">Additional Information</h5>
-                                            </div>
-                                            <div class="card-body">
-                                                <?php foreach($formConfig as $field): ?>
-                                                    <div class="mb-4">
-                                                        <label class="form-label fw-bold">
-                                                            <?= $field['field_label'] ?>
-                                                            <?php if($field['required']): ?>
-                                                                <span class="text-danger">*</span>
-                                                            <?php endif; ?>
-                                                            <?php if($field['field_type'] === 'select'): ?>
-                                                                <span class="badge gradient-badge float-end">Points vary by option</span>
-                                                            <?php else: ?>
-                                                                <span class="badge gradient-badge float-end">+<?= $field['points'] ?> points</span>
-                                                            <?php endif; ?>
-                                                        </label>
-                                                        
-                                                        <?php if($field['field_type'] === 'text'): ?>
-                                                            <input type="text" class="form-control" 
-                                                                   name="<?= $field['field_name'] ?>" 
-                                                                   <?= $field['required'] ? 'required' : '' ?>>
-                                                            
-                                                        <?php elseif($field['field_type'] === 'number'): ?>
-                                                            <input type="number" class="form-control" 
-                                                                   name="<?= $field['field_name'] ?>"
-                                                                   min="0"
-                                                                   <?= $field['required'] ? 'required' : '' ?>>
-                                                            
-                                                        <?php elseif($field['field_type'] === 'date'): ?>
-                                                            <input type="date" class="form-control" 
-                                                                   name="<?= $field['field_name'] ?>" 
-                                                                   <?= $field['required'] ? 'required' : '' ?>>
-                                                            
-                                                        <?php elseif($field['field_type'] === 'select'): ?>
-                                                            <select class="form-select" 
-                                                                    name="<?= $field['field_name'] ?>" 
-                                                                    <?= $field['required'] ? 'required' : '' ?>>
-                                                                <option value="">-- Select --</option>
-                                                                <option value="None">None (0 points)</option>
-                                                                <?php if(!empty($field['options'])): 
-                                                                    $options = explode(',', $field['options']);
-                                                                    foreach($options as $option): 
-                                                                        $parts = explode(':', $option);
-                                                                        $optName = trim($parts[0]);
-                                                                        $optPoints = isset($parts[1]) ? intval(trim($parts[1])) : 0;
-                                                                ?>
-                                                                    <option value="<?= $optName ?>"><?= $optName ?> (<?= $optPoints ?> points)</option>
-                                                                <?php endforeach; endif; ?>
-                                                            </select>
-                                                            
-                                                        <?php elseif($field['field_type'] === 'checkbox'): ?>
-                                                            <div class="form-check form-switch">
-                                                                <input class="form-check-input" type="checkbox" 
-                                                                       name="<?= $field['field_name'] ?>" 
-                                                                       <?= $field['required'] ? 'required' : '' ?>>
-                                                                <label class="form-check-label">Yes</label>
-                                                            </div>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                    
-                                    <div class="d-grid">
-                                        <button type="submit" name="submit_attendance" class="btn btn-success btn-lg">
-                                            <i class="fas fa-paper-plane me-2"></i>Submit Attendance Report
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                     
-                        </div>
-                        <?php endif; ?>
-                  
-                        <?php if ($deadlinePassed): ?>
-                            <div class="card mb-4">
-                                <div class="card-header bg-danger text-white">
-                                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Deadline Passed</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="alert alert-danger">
-                                        <h4><i class="fas fa-clock me-2"></i>Submission deadline has passed!</h4>
-                                        <p class="mb-0">Your report has been automatically submitted with "Nill" for all unfilled fields.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <?php if ($userSubmitted || $deadlinePassed): ?>
-                            <div class="card mb-4">
-                                <div class="card-header bg-success text-white">
-                                    <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Your Submission</h5>
-                                </div>
-                                <div class="card-body">
-                                    <?php
-                                    $currentWeek = date('Y-W');
-                                    $stmt = $pdo->prepare("SELECT * FROM submissions 
-                                                          WHERE director_id = ? AND week = ?");
-                                    $stmt->execute([$_SESSION['user_id'], $currentWeek]);
-                                    $submission = $stmt->fetch();
-                                    
-                                    if ($submission) {
-                                        $data = json_decode($submission['data'], true);
-                                    } else {
-                                        // If no submission, create a Nill data array
-                                        $stmt = $pdo->query("SELECT field_name FROM form_config");
-                                        $fields = $stmt->fetchAll(PDO::FETCH_COLUMN);
-                                        $data = array_fill_keys($fields, 'Nill');
-                                        
-                                        // Add required fields with Nill values
-                                        $additionalFields = [
-                                            'current_membership_strength',
-                                            'new_members_this_week',
-                                            'active_officers',
-                                            'team1_attendance',
-                                            'team2_attendance',
-                                            'departmental_attendance',
-                                            'departmental_leader',
-                                            'assistant_departmental_leader',
-                                            'directorate'
-                                        ];
-                                        
-                                        foreach ($additionalFields as $field) {
-                                            $data[$field] = 'Nill';
-                                        }
-                                    }
-                                    ?>
-                                    <div class="alert alert-success d-flex align-items-center">
-                                        <i class="fas fa-check-circle me-3 fa-2x"></i>
-                                        <div>
-                                            <h5 class="mb-1">Status: <?= $submission ? 'Submitted' : 'Auto-submitted (Nill)' ?></h5>
-                                            <p class="mb-0">Week: <?= $currentWeek ?></p>
-                                            <?php if ($submission): ?>
-                                                <p class="mb-0">Submitted at: <?= $submission['submitted_at'] ?></p>
-                                                <p class="mb-0 fw-bold">Total Points: <?= $submission['total_points'] ?></p>
+                                            else: ?>
+                                                N/A
                                             <?php endif; ?>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>Field</th>
-                                                    <th>Value</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <!-- Time Information -->
-                                                <?php if ($submission): ?>
-                                                    <tr>
-                                                        <th>Month</th>
-                                                        <td><?= $submission['month'] ?></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <th>Year</th>
-                                                        <td><?= $submission['year'] ?></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <th>Week</th>
-                                                        <td><?= $submission['week_label'] ?></td>
-                                                    </tr>
-                                                <?php endif; ?>
-                                                
-                                                <!-- New Fields -->
-                                                <tr>
-                                                    <th>Current Membership Strength</th>
-                                                    <td><?= $data['current_membership_strength'] ?? 'Nill' ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <th>New Members This Week</th>
-                                                    <td><?= $data['new_members_this_week'] ?? 'Nill' ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Active Departmental Officers</th>
-                                                    <td><?= $data['active_officers'] ?? 'Nill' ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Team 1 Attendance</th>
-                                                    <td><?= $data['team1_attendance'] ?? 'Nill' ?></极狐>
-                                                </tr>
-                                                <tr>
-                                                    <th>Team 2 Attendance</th>
-                                                    <td><?= $data['team2_attendance'] ?? 'Nill' ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Total Departmental Attendance</th>
-                                                    <td><?= $data['departmental_attendance'] ?? 'Nill' ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Departmental Leader</th>
-                                                    <td><?= $data['departmental_leader'] ?? 'Nill' ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Assistant Departmental Leader</th>
-                                                    <td><?= $data['assistant_departmental_leader'] ?? 'Nill' ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Directorate</th>
-                                                    <td><?= $data['directorate'] ?? 'Nill' ?></td>
-                                                </tr>
-                                                
-                                                <!-- Custom Form Fields -->
-                                                <?php foreach($formConfig as $field): ?>
-                                                    <tr>
-                                                        <th><?= $field['field_label'] ?></th>
-                                                        <td><?= isset($data[$field['field_name']]) ? $data[$field['field_name']] : 'Nill' ?></td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    
-                                    <div class="d-flex justify-content-between mt-4">
-                                        <a href="?action=export_csv&week=<?= $currentWeek ?>" class="btn btn-primary">
-                                            <i class="fas fa-file-csv me-1"></i>Export CSV
-                                        </a>
-                                        <a href="?action=view_report&week=<?= $currentWeek ?>&department_id=<?= $_SESSION['department_id'] ?>" 
-                                           class="btn btn-info" target="_blank">
-                                            <i class="fas fa-print me-1"></i>Print Report
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                  
-                     <!-- User Management (Superadmin) -->
-                    <?php if($_SESSION['role'] === 'superadmin'): ?>
-                        <div class="card mb-4">
-                            <div class="card-header bg-primary text-white">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>User Management</h5>
-                                    <div class="search-container">
-                                        <i class="fas fa-search"></i>
-                                        <input type="text" id="userSearch" class="form-control" placeholder="Search users..." value="<?= htmlspecialchars($searchQuery) ?>">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <form method="POST" class="mb-4">
-                                    <h5 class="mb-3">Add New User</h5>
-                                    <div class="row">
-                                        <div class="col-md-3 mb-3">
-                                            <label class="form-label">Full Name</label>
-                                            <input type="text" name="name" class="form-control" required>
-                                        </div>
-                                        <div class="col-md-3 mb-3">
-                                            <label class="form-label">Username</label>
-                                            <input type="text" name="username" class="form-control" required>
-                                        </div>
-                                        
-                                        <div class="col-md-3 mb-3">
-                                            <label class="form-label">Phone (Password)</label>
-                                            <input type="text" name="phone" class="form-control" required>
-                                        </div>
-                                        <div class="col-md-3 mb-3">
-                                            <label class="form-label">Role</label>
-                                            <select name="role" class="form-select" required>
-                                                <option value="superadmin">Superadmin</option>
-                                                <option value="director">Director</option>
-                                                <option value="department_team_leader">Department Team Leader</option>
-                                                <option value="member">Member</极狐>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Department</label>
-                                            <select name="department_id" class="form-select">
-                                                <option value="">Select Department</option>
-                                                <?php foreach($departments as $dept): ?>
-                                                    <option value="<?= $dept['id'] ?>"><?= $dept['name'] ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Membership Strength</label>
-                                            <input type="number" name="membership_strength" class="form-control" min="0" value="0">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Active Officers</label>
-                                            <input type="number" name="active_officers" class="form-control" min="0" value="0">
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Departmental Leader</label>
-                                            <input type="text" name="departmental_leader" class="form-control">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Assistant Leader</label>
-                                            <input type="text" name="assistant_departmental_leader" class="form-control">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Directorate</label>
-                                            <input type="text" name="directorate" class="form-control">
-                                        </div>
-                                    </div>
-                                    <div class="d-flex justify-content-end">
-                                        <button type="submit" name="add_user" class="btn btn-primary">
-                                            <i class="fas fa-user-plus me-1"></i>Add User
-                                        </button>
-                                    </div>
-                                </form>
-                                
-                                <h5 class="mb-3">Existing Users</h5>
-                                <div class="card-body-cart">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Username</th>
-                                                <th>Phone</th>
-                                                <th>Role</th>
-                                                <th>Department</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach($users as $user): ?>
-                                                <tr>
-                                                    <td><?= $user['name'] ?></td>
-                                                    <td><?= $user['username'] ?></td>
-                                                    <td><?= $user['phone'] ?></td>
-                                                    <td>
-                                                        <span class="badge bg-info"><?= ucfirst($user['role']) ?></span>
-                                                    </td>
-                                                    <td><?= $user['dept_name'] ?? 'N/A' ?></td>
-                                                    <td>
-                                                        <?php if(!$user['is_protected']): ?>
-                                                            <a href="?action=delete_user&id=<?= $user['id'] ?>" class="btn btn-sm btn-danger">
-                                                                <i class="fas fa-trash"></i>
-                                                            </a>
-                                                        <?php else: ?>
-                                                            <span class="badge bg-success">Protected</span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                <!-- Pagination -->
-                                <?php if($totalPages > 1): ?>
-                                    <nav>
-                                        <ul class="pagination">
-                                            <?php if($page > 1): ?>
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page=<?= $page-1 ?>&search=<?= urlencode($searchQuery) ?>">
-                                                        <i class="fas fa-chevron-left"></i>
-                                                    </a>
-                                                </li>
-                                            <?php endif; ?>
-                                            
-                                            <?php for($i = 1; $i <= $totalPages; $i++): ?>
-                                                <li class="page-item <?= $i == $page ? 'active' : '' ?>">
-                                                    <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($searchQuery) ?>"><?= $i ?></a>
-                                                </li>
-                                            <?php endfor; ?>
-                                            
-                                            <?php if($page < $totalPages): ?>
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page=<?= $page+1 ?>&search=<?= urlencode($searchQuery) ?>">
-                                                        <i class="fas fa-chevron-right"></i>
-                                                    </a>
-                                                </li>
-                                            <?php endif; ?>
-                                        </ul>
-                                    </nav>
-                                <?php endif; ?>
+                                        </span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Last Login:</span>
+                                        <span><?= date('Y-m-d H:i') ?></span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Current Week:</span>
+                                        <span><?= date('Y-W') ?></span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content between align-items-center">
+                                        <span>Submission Status:</span>
+                                        <span class="badge bg-<?= $userSubmitted ? 'success' : ($deadlinePassed ? 'danger' : 'warning') ?>">
+                                            <?= $userSubmitted ? 'Submitted' : ($deadlinePassed ? 'Deadline Passed' : 'Pending') ?>
+                                        </span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     <?php endif; ?>
-
-           <!-- Form Configuration (Superadmin) -->
-                    <?php if($_SESSION['role'] === 'superadmin'): ?>
+                </div>
+            </div>
+            
+            <!-- Attendance Form (Director) -->
+            <?php if(isset($_SESSION['role']) && in_array($_SESSION['role'], ['director','department_team_leader']) && !$deadlinePassed && !$userSubmitted): ?>
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Weekly Attendance Form</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="fas fa-info-circle me-3 fs-4"></i>
+                            <div>
+                                <h5 class="mb-1">Director: <?= $_SESSION['name'] ?></h5>
+                                <p class="mb-0">Department: 
+                                    <?php 
+                                        $stmt = $pdo->prepare("SELECT name FROM departments WHERE id = ?");
+                                        $stmt->execute([$_SESSION['department_id']]);
+                                        echo $stmt->fetchColumn();
+                                    ?>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Department Information Section -->
                         <div class="card mb-4">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Form Configuration</h5>
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Department Information</h5>
                             </div>
                             <div class="card-body">
-                                <form method="POST" id="formConfig">
-                                    <div id="formFields">
-                                        <?php foreach($formConfig as $index => $field): ?>
-                                            <div class="form-field">
-                                                <div class="row mb-3">
-                                                    <div class="col-md-4">
-                                                        <label class="form-label">Field Label</label>
-                                                        <input type="text" name="field_label[]" class="form-control" 
-                                                               value="<?= $field['field_label'] ?>" required>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Departmental Leader</label>
+                                        <input type="text" class="form-control" 
+                                               value="<?= $currentUser['departmental_leader'] ?? 'Not set' ?>" readonly disabled>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Assistant Leader</label>
+                                        <input type="text" class="form-control" 
+                                               value="<?= $currentUser['assistant_departmental_leader'] ?? 'Not set' ?>" readonly disabled>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Directorate</label>
+                                        <input type="text" class="form-control" 
+                                               value="<?= $currentUser['directorate'] ?? 'Not set' ?>" readonly disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Weekly Attendance Fields -->
+                        <form method="POST" id="attendanceForm">
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Membership Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Current Membership Strength</label>
+                                            <input type="number" class="form-control" 
+                                                   name="current_membership_strength" 
+                                                   value="<?= $currentUser['membership_strength'] ?? 0 ?>" 
+                                                   min="0" readonly>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">New Members This Week</label>
+                                            <input type="number" class="form-control" 
+                                                   name="new_members_this_week" 
+                                                   min="0" required>
+                                            <small class="form-text text-muted">This will update membership strength</small>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Active Departmental Officers</label>
+                                            <input type="number" class="form-control" 
+                                                   name="active_officers" 
+                                                   value="<?= $currentUser['active_officers'] ?? 0 ?>" 
+                                                   min="0" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Team Attendance</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Team 1 Attendance</label>
+                                            <input type="number" class="form-control" 
+                                                   name="team1_attendance" 
+                                                   min="0" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Team 2 Attendance</label>
+                                            <input type="number" class="form-control" 
+                                                   name="team2_attendance" 
+                                                   min="0" required>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted">Note: Team attendance will be combined for departmental reporting</p>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" name="departmental_leader" value="<?= $currentUser['departmental_leader'] ?>">
+                            <input type="hidden" name="assistant_departmental_leader" value="<?= $currentUser['assistant_departmental_leader'] ?>">
+                            <input type="hidden" name="directorate" value="<?= $currentUser['directorate'] ?>">
+                            
+                            <!-- Custom Form Fields -->
+                            <?php if(count($formConfig) > 0): ?>
+                                <div class="card mb-4">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">Additional Information</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <?php foreach($formConfig as $field): ?>
+                                            <div class="mb-4">
+                                                <label class="form-label fw-bold">
+                                                    <?= $field['field_label'] ?>
+                                                    <?php if($field['required']): ?>
+                                                        <span class="text-danger">*</span>
+                                                    <?php endif; ?>
+                                                    <?php if($field['field_type'] === 'select'): ?>
+                                                        <span class="badge gradient-badge float-end">Points vary by option</span>
+                                                    <?php else: ?>
+                                                        <span class极狐 badge gradient-badge float-end">+<?= $field['points'] ?> points</span>
+                                                    <?php endif; ?>
+                                                </label>
+                                                
+                                                <?php if($field['field_type'] === 'text'): ?>
+                                                    <input type="text" class="form-control" 
+                                                           name="<?= $field['field_name'] ?>" 
+                                                           <?= $field['required'] ? 'required' : '' ?>>
+                                                    
+                                                <?php elseif($field['field_type'] === 'number'): ?>
+                                                    <input type="number" class="form-control" 
+                                                           name="<?= $field['field_name'] ?>"
+                                                           min="0"
+                                                           <?= $field['required'] ? 'required' : '' ?>>
+                                                    
+                                                <?php elseif($field['field_type'] === 'date'): ?>
+                                                    <input type="date" class="form-control" 
+                                                           name="<?= $field['field_name'] ?>" 
+                                                           <?= $field['required'] ? 'required' : '' ?>>
+                                                    
+                                                <?php elseif($field['field_type'] === 'select'): ?>
+                                                    <select class="form-select" 
+                                                            name="<?= $field['field_name'] ?>" 
+                                                            <?= $field['required'] ? 'required' : '' ?>>
+                                                        <option value="">-- Select --</option>
+                                                        <option value="None">None (0 points)</option>
+                                                        <?php if(!empty($field['options'])): 
+                                                            $options = explode(',', $field['options']);
+                                                            foreach($options as $option): 
+                                                                $parts = explode(':', $option);
+                                                                $optName = trim($parts[0]);
+                                                                $optPoints = isset($parts[1]) ? intval(trim($parts[1])) : 0;
+                                                        ?>
+                                                            <option value="<?= $optName ?>"><?= $optName ?> (<?= $optPoints ?> points)</option>
+                                                        <?php endforeach; endif; ?>
+                                                    </select>
+                                                    
+                                                <?php elseif($field['field_type'] === 'checkbox'): ?>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                               name="<?= $field['field_name'] ?>" 
+                                                               <?= $field['required'] ? 'required' : '' ?>>
+                                                        <label class="form-check-label">Yes</label>
                                                     </div>
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Field Name</label>
-                                                        <input type="text" name="field_name[]" class="form-control" 
-                                                               value="<?= $field['field_name'] ?>" required>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Field Type</label>
-                                                        <select name="field_type[]" class="form-select" required>
-                                                            <option value="text" <?= $field['field_type'] === 'text' ? 'selected' : '' ?>>Text</option>
-                                                            <option value="number" <?= $field['field_type'] === 'number' ? 'selected' : '' ?>>Number</option>
-                                                            <option value="date" <?= $field['field_type'] === 'date' ? 'selected' : '' ?>>Date</option>
-                                                            <option value="select" <?= $field['field_type'] === 'select' ? 'selected' : '' ?>>Select</option>
-                                                            <option value="checkbox" <?= $field['field_type'] === 'checkbox' ? 'selected' : '' ?>>Checkbox</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        <label class="form-label">Points</label>
-                                                        <input type="number" name="field_points[]" class="form-control" 
-                                                               value="<?= $field['points'] ?>" min="0" step="1">
-                                                    </div>
-                                                </div>
-                                                <div class="row mb-3">
-                                                    <div class="col-md-9">
-                                                        <div class="row options-row" style="<?= $field['field_type'] === 'select' ? '' : 'display:none;' ?>">
-                                                            <div class="col-md-12">
-                                                                <label class="form-label">Options (format: Option1:Points, Option2:Points)</label>
-                                                                <input type="text" name="field_options[]" class="form-control" 
-                                                                       value="<?= $field['options'] ?>" placeholder="e.g., Excellent:30,Good:20,None:0">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 d-flex align-items-end">
-                                                        <div class="form-check form-switch">
-                                                            <input class="form-check-input" type="checkbox" 
-                                                                   name="field_required[]" id="required<?= $index ?>" 
-                                                                   <?= $field['required'] ? 'checked' : '' ?>>
-                                                            <label class="form-check-label" for="required<?= $index ?>">
-                                                                Required
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <button type="button" class="btn btn-sm btn-danger remove-field">
-                                                    <i class="fas fa-trash me-1"></i>Remove Field
-                                                </button>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>
-                                    <div class="d-flex justify-content-between mt-4">
-                                        <button type="button" id="addField" class="btn btn-secondary">
-                                            <i class="fas fa-plus me-1"></i>Add Field
-                                        </button>
-                                        <button type="submit" name="save_form_config" class="btn btn-primary">
-                                            <i class="fas fa-save me-1"></i>Save Configuration
-                                        </button>
-                                    </div>
-                                </form>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <div class="d-grid">
+                                <button type="submit" name="submit_attendance" class="btn btn-success btn-lg">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Attendance Report
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
+                  
+            <?php if ($deadlinePassed): ?>
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Deadline Passed</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <h4><i class="fas fa-clock me-2"></i>Submission deadline has passed!</h4>
+                            <p class="mb-0">Your report has been automatically submitted with "Nill" for all unfilled fields.</p>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+                        
+            <?php if ($userSubmitted || $deadlinePassed): ?>
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Your Submission</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php
+                        $currentWeek = date('Y-W');
+                        $stmt = $pdo->prepare("SELECT * FROM submissions 
+                                              WHERE director_id = ? AND week = ?");
+                        $stmt->execute([$_SESSION['user_id'], $currentWeek]);
+                        $submission = $stmt->fetch();
+                        
+                        if ($submission) {
+                            $data = json_decode($submission['data'], true);
+                        } else {
+                            // If no submission, create a Nill data array
+                            $stmt = $pdo->query("SELECT field_name FROM form_config");
+                            $fields = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                            $data = array_fill_keys($fields, 'Nill');
+                            
+                            // Add required fields with Nill values
+                            $additionalFields = [
+                                'current_membership_strength',
+                                'new_members_this_week',
+                                'active_officers',
+                                'team1_attendance',
+                                'team2_attendance',
+                                'departmental_attendance',
+                                'departmental_leader',
+                                'assistant_departmental_leader',
+                                'directorate'
+                            ];
+                            
+                            foreach ($additionalFields as $field) {
+                                $data[$field] = 'Nill';
+                            }
+                        }
+                        ?>
+                        <div class="alert alert-success d-flex align-items-center">
+                            <i class="fas fa-check-circle me-3 fa-2x"></i>
+                            <div>
+                                <h5 class="mb-1">Status: <?= $submission ? 'Submitted' : 'Auto-submitted (Nill)' ?></h5>
+                                <p class="mb-0">Week: <?= $currentWeek ?></p>
+                                <?php if ($submission): ?>
+                                    <p class="mb-0">Submitted at: <?= $submission['submitted_at'] ?></p>
+                                    <p class="mb-0 fw-bold">Total Points: <?= $submission['total_points'] ?></p>
+                                <?php endif; ?>
                             </div>
                         </div>
-                    <?php endif; ?>
-    </div>
-    
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Field</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Time Information -->
+                                    <?php if ($submission): ?>
+                                        <tr>
+                                            <th>Month</th>
+                                            <td><?= $submission['month'] ?></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Year</th>
+                                            <td><?= $submission['year'] ?></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Week</th>
+                                            <td><?= $submission['week_label'] ?></td>
+                                        </tr>
+                                    <?php endif; ?>
+                                    
+                                    <!-- New Fields -->
+                                    <tr>
+                                        <th>Current Membership Strength</th>
+                                        <td><?= $data['current_membership_strength'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>New Members This Week</th>
+                                        <td><?= $data['new_members_this_week'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Active Departmental Officers</th>
+                                        <td><?= $data['active_officers'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Team 1 Attendance</th>
+                                        <td><?= $data['team1_attendance'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Team 2 Attendance</th>
+                                        <td><?= $data['team2_attendance'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Departmental Attendance</th>
+                                        <td><?= $data['departmental_attendance'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Departmental Leader</th>
+                                        <td><?= $data['department极狐_leader'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Assistant Departmental Leader</th>
+                                        <td><?= $data['assistant_departmental_leader'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Directorate</th>
+                                        <td><?= $data['directorate'] ?? 'Nill' ?></td>
+                                    </tr>
+                                    
+                                    <!-- Custom Form Fields -->
+                                    <?php foreach($formConfig as $field): ?>
+                                        <tr>
+                                            <th><?= $field['field_label'] ?></th>
+                                            <td><?= isset($data[$field['field_name']]) ? $data[$field['field_name']] : 'Nill' ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="?action=export_csv&week=<?= $currentWeek ?>" class="btn btn-primary">
+                                <i class="fas fa-file-csv me-1"></i>Export CSV
+                            </a>
+                            <a href="?action=view_report&week=<?= $currentWeek ?>&department_id=<?= $_SESSION['department_id'] ?>" 
+                               class="btn btn-info" target="_blank">
+                                <i class="fas fa-print me-1"></i>Print Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+                  
+            <!-- User Management (Superadmin) -->
+            <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin'): ?>
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>User Management</h5>
+                            <div class="search-container">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="userSearch" class="form-control" placeholder="Search users..." value="<?= htmlspecialchars($searchQuery) ?>">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" class="mb-4">
+                            <h5 class="mb-3">Add New User</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" name="name" class="form-control" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Username</label>
+                                    <input type="text" name="username" class="form-control" required>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Phone (Password)</label>
+                                    <input type="text" name="phone" class="form-control" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Role</label>
+                                    <select name="role" class="form-select" required>
+                                        <option value="superadmin">Superadmin</option>
+                                        <option value="director">Director</option>
+                                        <option value="department_team_leader">Department Team Leader</option>
+                                        <option value="member">Member</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Department</label>
+                                    <select name="department_id" class极狐="form-select">
+                                        <option value="">Select Department</option>
+                                        <?php foreach($departments as $dept): ?>
+                                            <option value="<?= $dept['id'] ?>"><?= $dept['name'] ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Membership Strength</label>
+                                    <input type="number" name="membership_strength" class="form-control" min="0" value="0">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Active Officers</label>
+                                    <input type="number" name="active_officers" class="form-control" min="0" value="0">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Departmental Leader</label>
+                                    <input type="text" name="departmental_leader" class="form-control">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Assistant Leader</label>
+                                    <input type="text" name="assistant_departmental_leader" class="form-control">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Directorate</label>
+                                    <input type="text" name="directorate" class="form-control">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" name="add_user" class="btn btn-primary">
+                                    <i class="fas fa-user-plus me-1"></i>Add User
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <h5 class="mb-3">Existing Users</h5>
+                        <div class="card-body-cart">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Username</th>
+                                        <th>Phone</th>
+                                        <th>Role</th>
+                                        <th>Department</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach($users as $user): ?>
+                                        <tr>
+                                            <td><?= $user['name'] ?></td>
+                                            <td><?= $user['username'] ?></td>
+                                            <td><?= $user['phone'] ?></td>
+                                            <td>
+                                                <span class="badge bg-info"><?= ucfirst($user['role']) ?></span>
+                                            </td>
+                                            <td><?= $user['dept_name'] ?? 'N/A' ?></td>
+                                            <td>
+                                                <?php if(!$user['is_protected']): ?>
+                                                    <a href="?action=delete_user&id=<?= $user['id'] ?>" class="btn btn-sm btn-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                <?php else: ?>
+                                                    <span class="badge bg-success">Protected</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <?php if($totalPages > 1): ?>
+                            <nav>
+                                <ul class="pagination">
+                                    <?php if($page > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=<?= $page-1 ?>&search=<?= urlencode($searchQuery) ?>">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+                                    
+                                    <?php for($i = 1; $i <= $totalPages; $i++): ?>
+                                        <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                                            <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($searchQuery) ?>"><?= $i ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+                                    
+                                    <?php if($page < $totalPages): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=<?= $page+1 ?>&search=<?= urlencode($searchQuery) ?>">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Form Configuration (Superadmin) -->
+            <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin'): ?>
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Form Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="formConfig">
+                            <div id="formFields">
+                                <?php foreach($formConfig as $index => $field): ?>
+                                    <div class="form-field">
+                                        <div class="row mb-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Field Label</label>
+                                                <input type="text" name="field_label[]" class="form-control" 
+                                                       value="<?= $field['field_label'] ?>" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Field Name</label>
+                                                <input type="text" name="field_name[]" class="form-control" 
+                                                       value="<?= $field['field_name'] ?>" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Field Type</label>
+                                                <select name="field_type[]" class="form-select" required>
+                                                    <option value="text" <?= $field['field_type'] === 'text' ? 'selected' : '' ?>>Text</option>
+                                                    <option value="number" <?= $field['field_type'] === 'number' ? 'selected' : '' ?>>Number</option>
+                                                    <option value="date" <?= $field['field_type'] === 'date' ? 'selected' : '' ?>>Date</option>
+                                                    <option value="select" <?= $field['field_type'] === 'select' ? 'selected' : '' ?>>Select</option>
+                                                    <option value="checkbox" <?= $field['field_type'] === 'checkbox' ? 'selected' : '' ?>>Checkbox</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Points</label>
+                                                <input type="number" name="field_points[]" class="form-control" 
+                                                       value="<?= $field['points'] ?>" min="0" step="1">
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-9">
+                                                <div class="row options-row" style="<?= $field['field_type'] === 'select' ? '' : 'display:none;' ?>">
+                                                    <div class="col-md-12">
+                                                        <label class="form-label">Options (format: Option1:Points, Option2:Points)</label>
+                                                        <input type="text" name="field_options[]" class="form-control" 
+                                                               value="<?= $field['options'] ?>" placeholder="e.g., Excellent:30,Good:20,None:0">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 d-flex align-items-end">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="field_required[]" id="required<?= $index ?>" 
+                                                           <?= $field['required'] ? 'checked' : '' ?>>
+                                                    <label class="form-check-label" for="required<?= $index ?>">
+                                                        Required
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-danger remove-field">
+                                            <i class="fas fa-trash me-1"></i>Remove Field
+                                        </button>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="button" id="addField" class="btn btn-secondary">
+                                    <i class="fas fa-plus me-1"></i>Add Field
+                                </button>
+                                <button type="submit" name="save_form_config" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Save Configuration
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 
     <!-- Deadline Modal -->
     <div class="modal fade" id="deadlineModal" tabindex="-1" aria-hidden="true">
@@ -2010,7 +1997,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                             <label class="form-label">Deadline Time</label>
                             <input type="time" class="form-control" name="deadline_time" 
                                    value="<?= $deadline['deadline_time'] ?>" required>
-                                        </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
