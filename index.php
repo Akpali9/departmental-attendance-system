@@ -24,7 +24,7 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS departments (
 )");
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY极狐 KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
     phone VARCHAR(20) NOT NULL,
@@ -86,7 +86,7 @@ if ($pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() == 0) {
                ('Super Admin', 'superadmin', 'admin123', 'superadmin', 1)");
     
     // Insert initial deadline
-    $pdo->exec("INSERT INTO deadlines (dead极狐line_day, deadline_time) VALUES (5, '17:00:00')");
+    $pdo->exec("INSERT INTO deadlines (deadline_day, deadline_time) VALUES (5, '17:00:00')");
 }
 
 // Helper functions
@@ -157,7 +157,7 @@ function autoSubmitNilReports($pdo) {
             'new_members_this_week' => 'Nill',
             'active_officers' => 'Nill',
             'team1_attendance' => 'Nill',
-            'team2_attendance' => '极狐Nill',
+            'team2_attendance' => 'Nill',
             'departmental_attendance' => 'Nill',
             'departmental_leader' => 'Nill',
             'assistant_departmental_leader' => 'Nill',
@@ -451,7 +451,7 @@ if ($action === 'delete_user' && isset($_SESSION['role']) && $_SESSION['role'] =
             $message = "User deleted successfully!";
         }
     } catch (Exception $e) {
-        $message = "Error deleting user: " . $极狐e->getMessage();
+        $message = "Error deleting user: " . $e->getMessage();
     }
 }
 
@@ -480,7 +480,7 @@ if (isset($_POST['update_team_leaders']) && isset($_SESSION['role']) && $_SESSIO
 
 // Update directorate (superadmin)
 if (isset($_POST['update_directorate']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin') {
-    $user_id = $_POST['user极狐_id'];
+    $user_id = $_POST['user_id'];
     $directorate = $_POST['directorate'];
     
     try {
@@ -842,7 +842,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
         
         .chart-container {
             background: white;
-            border-radius: 15极狐px;
+            border-radius: 15px;
             padding: 20px;
             margin-top: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
@@ -1927,7 +1927,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                         <form method="POST" id="formConfig">
                             <div id="formFields">
                                 <?php foreach($formConfig as $index => $field): ?>
-                                    <div class极狐="form-field">
+                                    <div class="form-field">
                                         <div class="row mb-3">
                                             <div class="col-md-4">
                                                 <label class="form-label">Field Label</label>
@@ -2082,7 +2082,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                                         <input class="form-check-input" type="checkbox" name="field_required[]">
                                         <label class="form-check-label">Required</label>
                                     </div>
-                                </极狐>
+                                </div>
                             </div>
                             <button type="button" class="btn btn-sm btn-danger remove-field">
                                 <i class="fas fa-trash me-1"></i>Remove Field
