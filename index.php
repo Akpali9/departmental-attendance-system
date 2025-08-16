@@ -24,7 +24,7 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS departments (
 )");
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY极狐 KEY,
     name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
     phone VARCHAR(20) NOT NULL,
@@ -86,7 +86,7 @@ if ($pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() == 0) {
                ('Super Admin', 'superadmin', 'admin123', 'superadmin', 1)");
     
     // Insert initial deadline
-    $pdo->exec("INSERT INTO deadlines (deadline_day, deadline_time) VALUES (5, '17:00:00')");
+    $pdo->exec("INSERT INTO deadlines (dead极狐line_day, deadline_time) VALUES (5, '17:00:00')");
 }
 
 // Helper functions
@@ -157,7 +157,7 @@ function autoSubmitNilReports($pdo) {
             'new_members_this_week' => 'Nill',
             'active_officers' => 'Nill',
             'team1_attendance' => 'Nill',
-            'team2_attendance' => 'Nill',
+            'team2_attendance' => '极狐Nill',
             'departmental_attendance' => 'Nill',
             'departmental_leader' => 'Nill',
             'assistant_departmental_leader' => 'Nill',
@@ -451,34 +451,36 @@ if ($action === 'delete_user' && isset($_SESSION['role']) && $_SESSION['role'] =
             $message = "User deleted successfully!";
         }
     } catch (Exception $e) {
-        $message = "Error deleting user: " . $e->getMessage();
+        $message = "Error deleting user: " . $极狐e->getMessage();
     }
 }
 
-// Update user profile (for leaders)
-if (isset($_POST['update_profile']) && isset($_SESSION['role']) && in_array($_SESSION['role'], ['director', 'department_team_leader'])) {
+// Update team leaders (director only)
+if (isset($_POST['update_team_leaders']) && isset($_SESSION['role']) && $_SESSION['role'] === 'director') {
     $departmental_leader = $_POST['departmental_leader'];
     $assistant_departmental_leader = $_POST['assistant_departmental_leader'];
     
     try {
+        // Update department's team leaders
         $stmt = $pdo->prepare("UPDATE users SET 
                               departmental_leader = ?,
                               assistant_departmental_leader = ?
-                              WHERE id = ?");
+                              WHERE department_id = ?");
         $stmt->execute([
             $departmental_leader,
             $assistant_departmental_leader,
-            $_SESSION['user_id']
+            $_SESSION['department_id']
         ]);
-        $message = "Profile updated successfully!";
+        
+        $message = "Team leaders updated successfully!";
     } catch (Exception $e) {
-        $message = "Error updating profile: " . $e->getMessage();
+        $message = "Error updating team leaders: " . $e->getMessage();
     }
 }
 
 // Update directorate (superadmin)
 if (isset($_POST['update_directorate']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin') {
-    $user_id = $_POST['user_id'];
+    $user_id = $_POST['user极狐_id'];
     $directorate = $_POST['directorate'];
     
     try {
@@ -637,7 +639,7 @@ if ($action === 'view_report') {
                             <td><?= $submission['month'] ?? 'Nill' ?></td>
                         </tr>
                         <tr>
-                            <th>Year</极狐>
+                            <th>Year</th>
                             <td><?= $submission['year'] ?? 'Nill' ?></td>
                         </tr>
                         <tr>
@@ -653,7 +655,7 @@ if ($action === 'view_report') {
                         <tr>
                             <th>New Members This Week</th>
                             <td><?= $data['new_members_this_week'] ?? 'Nill' ?></td>
-                        </极狐>
+                        </tr>
                         <tr>
                             <th>Active Departmental Officers</th>
                             <td><?= $data['active_officers'] ?? 'Nill' ?></td>
@@ -722,6 +724,16 @@ if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $currentUser = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Get department team leaders
+$teamLeaders = [];
+if (isset($_SESSION['department_id'])) {
+    $stmt = $pdo->prepare("SELECT * FROM users 
+                          WHERE department_id = ? 
+                          AND role IN ('department_team_leader')");
+    $stmt->execute([$_SESSION['department_id']]);
+    $teamLeaders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // Get current week's submissions
@@ -830,7 +842,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
         
         .chart-container {
             background: white;
-            border-radius: 15px;
+            border-radius: 15极狐px;
             padding: 20px;
             margin-top: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
@@ -870,7 +882,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
         }
         
         .btn-success {
-            background: linear-gradient(45极狐, var(--success) 0%, #96c93d 100%);
+            background: linear-gradient(45deg, var(--success) 0%, #96c93d 100%);
             border: none;
         }
         
@@ -1106,14 +1118,15 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <!-- Profile Update Section for Leaders -->
-            <?php if(isset($_SESSION['role']) && in_array($_SESSION['role'], ['director','department_team_leader'])): ?>
+            <!-- Update Team Leaders (Director Only) -->
+            <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'director'): ?>
                 <div class="card mb-4">
                     <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Update Department Leadership</h5>
+                        <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Update Team Leaders</h5>
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <input type="hidden" name="update_team_leaders" value="1">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Departmental Leader</label>
@@ -1126,8 +1139,8 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                                            value="<?= $currentUser['assistant_departmental_leader'] ?? '' ?>" required>
                                 </div>
                             </div>
-                            <button type="submit" name="update_profile" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i>Update Profile
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Update Team Leaders
                             </button>
                         </form>
                     </div>
@@ -1354,6 +1367,28 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                     
+                    <!-- Team Leaders Section -->
+                    <?php if(count($teamLeaders) > 0): ?>
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Department Team Leaders</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group">
+                                    <?php foreach($teamLeaders as $leader): ?>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-0"><?= $leader['name'] ?></h6>
+                                                <small class="text-muted"><?= ucfirst($leader['role']) ?></small>
+                                            </div>
+                                            <span class="badge bg-primary"><?= $leader['departmental_leader'] ? 'Leader' : 'Assistant' ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    
                     <!-- User Info Card -->
                     <?php if(isset($_SESSION['role']) && in_array($_SESSION['role'], ['director','superadmin','department_team_leader'])): ?>
                         <div class="card mb-4">
@@ -1384,11 +1419,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                                             <?php endif; ?>
                                         </span>
                                     </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>Last Login:</span>
-                                        <span><?= date('Y-m-d H:i') ?></span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <li class="list-group-item d-flex justify-content between align-items-center">
                                         <span>Current Week:</span>
                                         <span><?= date('Y-W') ?></span>
                                     </li>
@@ -1406,7 +1437,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
             
             <!-- Attendance Form (Director) -->
-            <?php if(isset($_SESSION['role']) && in_array($_SESSION['role'], ['director','department_team_leader']) && !$deadlinePassed && !$userSubmitted): ?>
+            <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'director' && !$deadlinePassed && !$userSubmitted): ?>
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
                         <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Weekly Attendance Form</h5>
@@ -1426,27 +1457,22 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         </div>
                         
-                        <!-- Department Information Section -->
+                        <!-- Team Leaders Information -->
                         <div class="card mb-4">
                             <div class="card-header bg-info text-white">
-                                <h5 class="mb-0">Department Information</h5>
+                                <h5 class="mb-0">Team Leaders</h5>
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-6 mb-3">
                                         <label class="form-label">Departmental Leader</label>
                                         <input type="text" class="form-control" 
-                                               value="<?= $currentUser['departmental_leader'] ?? 'Not set' ?>" readonly disabled>
+                                               value="<?= $currentUser['departmental_leader'] ?? 'Not set' ?>" readonly>
                                     </div>
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-6 mb-3">
                                         <label class="form-label">Assistant Leader</label>
                                         <input type="text" class="form-control" 
-                                               value="<?= $currentUser['assistant_departmental_leader'] ?? 'Not set' ?>" readonly disabled>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label">Directorate</label>
-                                        <input type="text" class="form-control" 
-                                               value="<?= $currentUser['directorate'] ?? 'Not set' ?>" readonly disabled>
+                                               value="<?= $currentUser['assistant_departmental_leader'] ?? 'Not set' ?>" readonly>
                                     </div>
                                 </div>
                             </div>
@@ -1529,7 +1555,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                                                     <?php if($field['field_type'] === 'select'): ?>
                                                         <span class="badge gradient-badge float-end">Points vary by option</span>
                                                     <?php else: ?>
-                                                        <span class极狐 badge gradient-badge float-end">+<?= $field['points'] ?> points</span>
+                                                        <span class="badge gradient-badge float-end">+<?= $field['points'] ?> points</span>
                                                     <?php endif; ?>
                                                 </label>
                                                 
@@ -1604,17 +1630,17 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             <?php endif; ?>
                         
-            <?php if ($userSubmitted || $deadlinePassed): ?>
+            <?php if (($userSubmitted || $deadlinePassed) && isset($_SESSION['role']) && in_array($_SESSION['role'], ['director','department_team_leader'])): ?>
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Your Submission</h5>
+                        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Department Submission</h5>
                     </div>
                     <div class="card-body">
                         <?php
                         $currentWeek = date('Y-W');
                         $stmt = $pdo->prepare("SELECT * FROM submissions 
-                                              WHERE director_id = ? AND week = ?");
-                        $stmt->execute([$_SESSION['user_id'], $currentWeek]);
+                                              WHERE department_id = ? AND week = ?");
+                        $stmt->execute([$_SESSION['department_id'], $currentWeek]);
                         $submission = $stmt->fetch();
                         
                         if ($submission) {
@@ -1707,7 +1733,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                                     </tr>
                                     <tr>
                                         <th>Departmental Leader</th>
-                                        <td><?= $data['department极狐_leader'] ?? 'Nill' ?></td>
+                                        <td><?= $data['departmental_leader'] ?? 'Nill' ?></td>
                                     </tr>
                                     <tr>
                                         <th>Assistant Departmental Leader</th>
@@ -1746,7 +1772,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
             <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'superadmin'): ?>
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content between align-items-center">
                             <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>User Management</h5>
                             <div class="search-container">
                                 <i class="fas fa-search"></i>
@@ -1784,7 +1810,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Department</label>
-                                    <select name="department_id" class极狐="form-select">
+                                    <select name="department_id" class="form-select">
                                         <option value="">Select Department</option>
                                         <?php foreach($departments as $dept): ?>
                                             <option value="<?= $dept['id'] ?>"><?= $dept['name'] ?></option>
@@ -1901,7 +1927,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                         <form method="POST" id="formConfig">
                             <div id="formFields">
                                 <?php foreach($formConfig as $index => $field): ?>
-                                    <div class="form-field">
+                                    <div class极狐="form-field">
                                         <div class="row mb-3">
                                             <div class="col-md-4">
                                                 <label class="form-label">Field Label</label>
@@ -2056,7 +2082,7 @@ $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
                                         <input class="form-check-input" type="checkbox" name="field_required[]">
                                         <label class="form-check-label">Required</label>
                                     </div>
-                                </div>
+                                </极狐>
                             </div>
                             <button type="button" class="btn btn-sm btn-danger remove-field">
                                 <i class="fas fa-trash me-1"></i>Remove Field
